@@ -1,0 +1,4 @@
+name = Modedemploi WatchDog
+package = Modedemploi
+description = A Modedemploi monitoring tool.
+core = 7.x

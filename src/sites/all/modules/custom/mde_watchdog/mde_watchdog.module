@@ -1,0 +1,202 @@
+<?php
+
+/**
+ * Implements hook_help().
+ */
+function mde_watchdog_help($path, $arg) {
+    if ($path == 'admin/help#mde_watchdog') {
+        return t("A Modedemploi monitoring tool.");
+    }
+}
+
+/**
+ * Implements hook_menu().
+ */
+function mde_watchdog_menu() {
+    $items = array();
+
+    $items['mde-watchdog/status'] = array(
+        'title' => "Site Status",
+        'description' => '',
+        'weight' => 1,
+        'type' => MENU_CALLBACK,
+        'page callback' => '_mde_watchdog_status',
+        'page arguments' => array(),
+        'access arguments' => array('access content'),
+    );
+
+    $items['admin/config/development/mde-watchdog'] = array(
+        'title' => 'Modedemploi WatchDog settings',
+        'description' => '',
+        'weight' => 4,
+        'type' => MENU_NORMAL_ITEM,
+        'page callback' => 'drupal_get_form',
+        'page arguments' => array('mde_watchdog_settings_form'),
+        'access arguments' => array('access administration menu'),
+    );
+
+    return $items;
+}
+
+/**
+ * Modedemploi WatchDog Settings Form
+ *
+ * @param $form
+ * @param $form_state
+ */
+function mde_watchdog_settings_form($form, &$form_state) {
+
+    // FIXME: Ajouter des informations sur comment se la procurer
+    // FIXME: Ajouter eventuellement un texte d'aide en markup?
+    $form['mde_watchdog_api_key'] = array(
+        '#type' => 'textfield',
+        '#title' => t("Votre clé API WatchDog"),
+        '#default_value' => variable_get('mde_watchdog_api_key', NULL),
+        '#size' => 100,
+        '#maxlength' => 100,
+        //'#description' => t(""),
+        '#required' => TRUE,
+    );
+
+    return system_settings_form($form); // Turned into variables
+}
+
+/**
+ * Check if the stored API Key is matching the provided one.
+ * @return bool
+ */
+function _mde_watchdog_is_authorized() {
+    $query = '';
+    parse_str($_SERVER['QUERY_STRING'], $query);
+    $stored_key = variable_get('mde_watchdog_api_key', NULL);
+    if (!empty($stored_key) && isset($query['key']) && !empty($query['key']) && $stored_key == $query['key']) {
+        return TRUE;
+    }
+    return FALSE;
+}
+
+/**
+ * Gathers projects update info and returns it as a JSON response.
+ */
+function _mde_watchdog_status() {
+    $output = array();
+
+    // If the API Key isn't set or if they do not match.
+    if (!_mde_watchdog_is_authorized()) {
+        header("HTTP/1.1 403 Forbidden");
+        $output = array(
+            'status' => array(
+                'message' => 'Access denied',
+                'status_code' => '403',
+            )
+        );
+    }
+
+    // We gather date from the core Update Module.
+    $data = array();
+    if ($available = update_get_available(TRUE)) {
+        module_load_include('inc', 'update', 'update.compare');
+        $data = update_calculate_project_data($available);
+        $output = _mde_watchdog_simplify_projects_info($data);
+    }
+
+    print drupal_json_output($output);
+}
+
+/**
+ * Simplifies the project information gathered from the update module.
+ *
+ * @param $data
+ * @return array
+ */
+function _mde_watchdog_simplify_projects_info($data) {
+    $simplified = array();
+
+    foreach ($data as $project) {
+
+        if ($project['status'] == UPDATE_CURRENT) {
+            continue;
+        }
+
+        $project_info = array(
+            'name' => $project['title'],
+            'machine_name' => $project['info']['project'],
+            'project_type' => $project['project_type'],
+            'project_status' => $project['project_status'],
+            'existing_version' => $project['existing_version'],
+            'latest_version' => $project['latest_version'],
+            'recommended' => $project['recommended'],
+        );
+
+        if (isset($project['releases'])) {
+            foreach ($project['releases'] as $releases) {
+
+                $project_info['releases'][] = array(
+                    "name" => $releases['name'],
+                    "version" => $releases['version'],
+                    "status" => $releases['status'],
+                    "date" => $releases['date'],
+                    "release_link" => $releases['release_link'],
+                    "download_link" => $releases['download_link'],
+                    "release_type" => $releases['terms']["Release type"],
+                );
+
+            }
+        }
+
+        if (isset($project['security updates'])) {
+            foreach ($project['security updates'] as $securityupdate) {
+
+                $project_info['security_updates'][] = array(
+                    "name" => $securityupdate['name'],
+                    "version" => $securityupdate['version'],
+                    "status" => $securityupdate['status'],
+                    "date" => $securityupdate['date'],
+                    "release_link" => $securityupdate['release_link'],
+                    "download_link" => $securityupdate['download_link'],
+                    "release_type" => $securityupdate['terms']["Release type"],
+                );
+
+            }
+        }
+
+        $project_info['status'] = _mde_watchdog_update_status($project['status']);
+
+        $simplified[] = $project_info;
+    }
+
+    return $simplified;
+}
+
+function _mde_watchdog_update_status($status) {
+    switch ($status) {
+        case UPDATE_NOT_SECURE:
+            return 'Project is missing security update(s).';
+            break;
+        case UPDATE_REVOKED:
+            return 'Current release has been unpublished and is no longer available.';
+            break;
+        case UPDATE_NOT_SUPPORTED:
+            return 'Current release is no longer supported by the project maintainer.';
+            break;
+        case UPDATE_NOT_CURRENT:
+            return 'Project has a new release available, but it is not a security release.';
+            break;
+        case UPDATE_CURRENT:
+            return 'Project is up to date.';
+            break;
+        case UPDATE_NOT_CHECKED:
+            return 'Project\'s status cannot be checked.';
+            break;
+        case UPDATE_UNKNOWN:
+            return 'No available update data was found for project.';
+            break;
+        case UPDATE_NOT_FETCHED:
+            return 'There was a failure fetching available update data for this project.';
+            break;
+        case UPDATE_FETCH_PENDING:
+            return 'We need to (re)fetch available update data for this project.';
+            break;
+    }
+    return NULL;
+}

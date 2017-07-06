@@ -1,0 +1,5 @@
+name = Modedemploi tools
+description = A set of helpers and reusable functions
+core = 7.x
+package = Modedemploi
+version = "7.x-0.2"

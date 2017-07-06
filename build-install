@@ -1,0 +1,16 @@
+#!/bin/bash
+
+# Première installation
+if [ ! -d "src/includes" ]; then
+	drush make skeleton.make /tmp/drupal-installer && cp -r /tmp/drupal-installer/* src
+	rm -rf /tmp/drupal-installer
+fi
+
+# Default files folder
+if [ ! -d "src/sites/default/files" ]; then
+	mkdir src/sites/default/files
+fi
+# 
+
+# Permission pour l'upload
+find src/sites -name "files" | xargs -i chmod 777 {}

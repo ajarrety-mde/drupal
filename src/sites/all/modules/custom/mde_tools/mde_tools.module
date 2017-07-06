@@ -1,0 +1,161 @@
+<?php
+
+abstract class MdeTools
+{
+    /**
+     * Forces a value to be an array, useful when doing an SQL request.
+     * If $values is already an array, it returns itself.
+     *
+     * @param $values
+     * @return array
+     */
+    static function force_array($values)
+    {
+        return is_array($values) ? $values : array($values);
+    }
+
+    /**
+     * Retrieves all nids given a content type.
+     *
+     * @param $content_type
+     * @param int|null $published
+     * @param string|null $language
+     * @param int|array $excluded An optional parameter to exclude some ids.
+     * @return array
+     */
+    static function get_content_type_nids($content_type, $published = null, $language = null, $excluded = null)
+    {
+        $nids = array();
+
+        $query = db_select('node', 'n')
+            ->fields('n', array('nid'))
+            ->condition('type', $content_type);
+
+        if ($published !== null) {
+            $query->condition('status', $published);
+        }
+
+        if ($language) {
+            $query->condition('language', $language);
+        }
+
+        if ($excluded) {
+            $query->condition('nid', self::force_array($excluded), 'NOT IN');
+        }
+
+        $result = $query->execute();
+
+        while ($record = $result->fetchAssoc()) {
+            $nids[] = $record['nid'];
+        }
+
+        return $nids;
+    }
+
+    /**
+     * Retrieves nid for a specified unique content type.
+     *
+     * @param string $content_type
+     * @param int|null $published
+     * @param string|null $language
+     *
+     * @return int
+     */
+    static function get_unique_content_nid($content_type, $published = null, $language = null)
+    {
+        $query = db_select('node', 'n')
+            ->fields('n', array('nid'))
+            ->condition('type', $content_type);
+
+        if ($published !== null) {
+            $query->condition('status', $published);
+        }
+
+        if ($language !== null) {
+            $query->condition('language', $language);
+        }
+
+        $nid = $query->execute()->fetchField();
+
+        return $nid;
+    }
+
+    /**
+     * Retrieves a menu given his name and a maximum depth.
+     *
+     * @param string $name
+     * @param int|null $depth
+     * @return string
+     */
+    static function get_menu($name, $depth = null)
+    {
+        $query = db_select('menu_links', 'ml');
+        $query->fields('ml', array(
+            'mlid',
+            'plid',
+            'link_title',
+            'link_path',
+            'options'
+        ));
+        $query->condition('ml.menu_name', $name);
+        $query->orderBy('ml.weight', 'ASC');
+
+        if ($depth !== null) {
+            $query->condition('ml.depth', $depth, '<=');
+        }
+
+        $items = $query->execute()->fetchAll();
+        $items = self::unflatten_menu($items);
+
+        return $items;
+    }
+
+    /**
+     * Unflattens a menu.
+     *
+     * @param array $items
+     * @param int $parent
+     * @return array
+     */
+    static function unflatten_menu(array $items, $parent = 0)
+    {
+        $menu = array();
+
+        foreach ($items as $item) {
+            if ($item->plid == $parent) {
+                $children = self::unflatten_menu($items, $item->mlid);
+
+                if ($children) {
+                    $item->children = $children;
+                }
+
+                $menu[] = $item;
+            }
+        }
+
+        return $menu;
+    }
+
+    /**
+     * Check whether or not a node is in a menu.
+     * An optional parameter is used to specify in where menus to search.
+     *
+     * @param $nid
+     * @param string|array $menu_names
+     * @return bool
+     */
+    static function node_is_in_menu($nid, $menu_names = null)
+    {
+        $query = db_select('menu_links', 'ml')
+            ->fields('ml', array('mlid'))
+            ->condition('link_path', "node/$nid");
+
+        if ($menu_names) {
+            $query->condition('menu_name', self::force_array($menu_names), 'IN');
+        }
+
+        $result = $query->execute()->rowCount();
+
+        return $result > 0;
+    }
+}

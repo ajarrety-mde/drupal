@@ -1,0 +1,5 @@
+name = Modedemploi Graphic Charter
+description = Provides a route and menu item that displays a template in order to test the website's theme.
+core = 7.x
+package = Modedemploi
+version = "7.x-0.2"

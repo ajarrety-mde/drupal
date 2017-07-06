@@ -1,0 +1,63 @@
+<?php
+
+/**
+ * Implements hook_permission().
+ * @return array
+ */
+function mde_charter_permission()
+{
+    return array(
+        'view chart page' => array(
+            'title' => t('View the graphic charter'),
+            'description' => t('View the graphic charter'),
+        ),
+    );
+}
+
+/**
+ * Implements hook_menu().
+ */
+function mde_charter_menu()
+{
+    $items['admin/appearance/graphic-charter'] = array(
+        'title' => 'Graphic Charter',
+        'description' => "Allows the front-end developer to test the site's design.",
+        'weight' => 1,
+        'type' => MENU_NORMAL_ITEM,
+        'theme callback' => 'mde_charter_theme_callback',
+        'page callback' => 'mde_charter_page_callback',
+        'access arguments' => array('view chart page'),
+    );
+
+    return $items;
+}
+
+function mde_charter_theme_callback()
+{
+    return variable_get('theme_default', 'mde');
+}
+
+/**
+ * Implements hook_theme().
+ * @return array
+ */
+function mde_charter_theme()
+{
+    return array(
+        'graphic_charter' => array(
+            'path' => drupal_get_path('module', 'mde_charter') . '/templates',
+            'template' => 'graphic-charter',
+            'arguments' => array(),
+        ),
+    );
+}
+
+/**
+ * A page callback that renders a template.
+ */
+function mde_charter_page_callback()
+{
+    global $base_url;
+    global $language;
+    return theme('graphic_charter');
+}

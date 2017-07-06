@@ -1,0 +1,63 @@
+#########################################
+# FILES
+#########################################
+# Folder view configuration files
+.DS_Store
+Desktop.ini
+
+# Thumbnail cache files
+._*
+Thumbs.db
+
+#########################################
+#PHPSTORM
+#########################################
+.idea
+
+#########################################
+tmp/*
+!tmp/.gitkeep
+
+config/mysql/*
+!config/mysql/.gitkeep
+
+
+# Ignore configuration files that may contain sensitive information.
+src/sites/example.sites.php
+
+# Ignore paths that contain generated content.
+src/files/
+src/sites/*/files
+src/sites/*/private
+
+# Ignore default text files
+src/robots.txt
+src/CHANGELOG.txt
+src/COPYRIGHT.txt
+src/INSTALL*.txt
+src/LICENSE.txt
+src/MAINTAINERS.txt
+src/UPGRADE.txt
+src/README.txt
+src/sites/README.txt
+src/sites/all/modules/README.txt
+src/sites/all/libraries/README.txt
+src/sites/all/themes/README.txt
+src/sites/all/modules/contrib/
+src/sites/all/themes/contrib/
+
+# Ignore everything but the "sites" folder ( for non core developer )
+src/.htaccess
+src/web.config
+src/authorize.php
+src/cron.php
+src/index.php
+src/install.php
+src/update.php
+src/xmlrpc.php
+src/includes
+src/misc
+src/modules
+src/profiles
+src/scripts
+src/themes
