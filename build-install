@@ -1,8 +1,11 @@
 #!/bin/bash
 
+# Disable git permission
+git config --local core.filemode false
+
 # Première installation
 if [ ! -d "src/includes" ]; then
-	drush make skeleton.make /tmp/drupal-installer && cp -r /tmp/drupal-installer/* src
+	drush make config/drush/skeleton.make /tmp/drupal-installer && cp -r /tmp/drupal-installer/* src
 	rm -rf /tmp/drupal-installer
 fi
 
