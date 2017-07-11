@@ -22,6 +22,7 @@
         SetEnv SAMPLE_DATABASE_PASS "SAMPLE_DATABASE_PASS"
         SetEnv SAMPLE_DATABASE_HOST "SAMPLE_DATABASE_HOST"
         SetEnv SAMPLE_DATABASE_PORT ""
+        SetEnv SAMPLE_DATABASE_PREFIX ""
         ...
         ...
     </VirtualHost>
