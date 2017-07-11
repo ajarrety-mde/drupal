@@ -255,7 +255,7 @@ $databases = array (
       'host'     => getenv('SITE2_DATABASE_HOST'),
       'port'     => getenv('SITE2_DATABASE_PORT'),
       'driver'   => 'mysql',
-      'prefix'   => '',
+      'prefix'   => getenv('SITE2_DATABASE_PREFIX'),
     ),
   ),
 );
